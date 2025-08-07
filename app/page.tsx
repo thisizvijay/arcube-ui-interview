@@ -5,18 +5,10 @@ import { useOrders } from '@/lib/hooks/use-orders';
 import { Button } from '@/components/ui/button';
 import { UserDropdown } from '@/components/user-dropdown';
 import { NavigationMenu } from '@/components/navigation-menu';
+import { EnhancedProductDialog } from '@/components/enhanced-product-dialog';
 import { 
-  User, 
-  Mail, 
-  Shield, 
-  Settings, 
-  Activity,
-  Calendar,
-  CheckCircle,
   Search,
-  Filter,
   Plus,
-  Eye,
   Edit,
   Trash2,
   Plane,
@@ -24,11 +16,9 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
-  DollarSign,
   AlertCircle
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 
 
 
@@ -242,17 +232,20 @@ export default function HomePage() {
                     {filteredOrders.map((order) => (
                       <tr key={order.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              PNR: {order.pnr}
+                          <EnhancedProductDialog
+                            orderId={order.id}
+                            pnr={order.pnr}
+                            onProductCancelled={refetch}
+                          >
+                            <div className="cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+                              <div className="text-sm font-medium text-gray-900">
+                                PNR: {order.pnr}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                ID: {order.id}
+                              </div>
                             </div>
-                            <div className="text-sm text-gray-500">
-                              ID: {order.id}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {order.products.length} product(s)
-                            </div>
-                          </div>
+                          </EnhancedProductDialog>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
@@ -295,9 +288,6 @@ export default function HomePage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
                             <Button variant="outline" size="sm">
                               <Edit className="h-4 w-4" />
                             </Button>

@@ -76,6 +76,11 @@ export interface OrdersResponse {
   };
 }
 
+export interface SingleOrderResponse {
+  success: boolean;
+  data: OrderWithProducts;
+}
+
 export interface GetOrdersParams {
   page?: number;
   limit?: number;
@@ -150,6 +155,10 @@ class OrdersApi {
         reason: 'Customer request'
       }),
     });
+  }
+
+  async getOrderWithProducts(orderId: string): Promise<SingleOrderResponse> {
+    return this.request<SingleOrderResponse>(`/orders/${orderId}/with-products`);
   }
 }
 

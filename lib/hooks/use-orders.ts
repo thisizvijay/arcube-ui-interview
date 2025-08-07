@@ -15,6 +15,7 @@ interface UseOrdersReturn {
   fetchOrders: (params?: GetOrdersParams) => Promise<void>;
   fetchOrdersWithProducts: (params?: GetOrdersParams) => Promise<void>;
   refetch: () => Promise<void>;
+  refetchWithProducts: () => Promise<void>;
 }
 
 export function useOrders(): UseOrdersReturn {
@@ -75,10 +76,15 @@ export function useOrders(): UseOrdersReturn {
     await fetchOrders();
   }, [fetchOrders]);
 
+  const refetchWithProducts = useCallback(async () => {
+    await fetchOrdersWithProducts();
+  }, [fetchOrdersWithProducts]);
+
   // Initial fetch on mount
   useEffect(() => {
     fetchOrders();
-  }, [fetchOrders]);
+    fetchOrdersWithProducts();
+  }, [fetchOrders, fetchOrdersWithProducts]);
 
   return {
     orders,
@@ -89,5 +95,6 @@ export function useOrders(): UseOrdersReturn {
     fetchOrders,
     fetchOrdersWithProducts,
     refetch,
+    refetchWithProducts,
   };
 } 
