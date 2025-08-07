@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-context';
+import { useOrders } from '@/lib/hooks/use-orders';
 import { Button } from '@/components/ui/button';
 import { UserDropdown } from '@/components/user-dropdown';
 import { NavigationMenu } from '@/components/navigation-menu';
@@ -23,169 +24,13 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
-  DollarSign
+  DollarSign,
+  AlertCircle
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-// Dummy order data inspired by order.model.ts
-const dummyOrders = [
-  {
-    id: 'ord-001',
-    pnr: 'ABC123',
-    transactionId: 'TXN-2024-001',
-    customer: {
-      email: 'john.doe@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-      phone: '+1-555-0123'
-    },
-    products: ['Flight Ticket', 'Travel Insurance'],
-    segments: [
-      {
-        segmentId: 'seg-001',
-        flightNumber: 'AA123',
-        departure: 'JFK',
-        arrival: 'LAX',
-        departureTime: new Date('2024-03-15T10:00:00Z'),
-        arrivalTime: new Date('2024-03-15T13:30:00Z'),
-        operatingCarrier: 'American Airlines',
-        passengerIds: ['pax-001', 'pax-002']
-      }
-    ],
-    status: 'confirmed' as const,
-    userId: 'user-001',
-    totalAmount: 1250.00,
-    totalCurrency: 'USD',
-    notes: 'Premium seat upgrade requested',
-    createdAt: new Date('2024-03-10T09:00:00Z'),
-    updatedAt: new Date('2024-03-10T09:00:00Z')
-  },
-  {
-    id: 'ord-002',
-    pnr: 'DEF456',
-    transactionId: 'TXN-2024-002',
-    customer: {
-      email: 'jane.smith@example.com',
-      firstName: 'Jane',
-      lastName: 'Smith',
-      phone: '+1-555-0456'
-    },
-    products: ['Flight Ticket'],
-    segments: [
-      {
-        segmentId: 'seg-002',
-        flightNumber: 'DL789',
-        departure: 'ATL',
-        arrival: 'SFO',
-        departureTime: new Date('2024-03-20T14:00:00Z'),
-        arrivalTime: new Date('2024-03-20T17:45:00Z'),
-        operatingCarrier: 'Delta Airlines',
-        passengerIds: ['pax-003']
-      }
-    ],
-    status: 'pending' as const,
-    userId: 'user-002',
-    totalAmount: 890.00,
-    totalCurrency: 'USD',
-    notes: '',
-    createdAt: new Date('2024-03-12T11:30:00Z'),
-    updatedAt: new Date('2024-03-12T11:30:00Z')
-  },
-  {
-    id: 'ord-003',
-    pnr: 'GHI789',
-    transactionId: 'TXN-2024-003',
-    customer: {
-      email: 'mike.wilson@example.com',
-      firstName: 'Mike',
-      lastName: 'Wilson',
-      phone: '+1-555-0789'
-    },
-    products: ['Flight Ticket', 'Hotel Booking', 'Car Rental'],
-    segments: [
-      {
-        segmentId: 'seg-003',
-        flightNumber: 'UA456',
-        departure: 'ORD',
-        arrival: 'MIA',
-        departureTime: new Date('2024-03-25T08:00:00Z'),
-        arrivalTime: new Date('2024-03-25T11:15:00Z'),
-        operatingCarrier: 'United Airlines',
-        passengerIds: ['pax-004', 'pax-005', 'pax-006']
-      }
-    ],
-    status: 'cancelled' as const,
-    userId: 'user-003',
-    totalAmount: 2100.00,
-    totalCurrency: 'USD',
-    notes: 'Customer requested cancellation due to emergency',
-    createdAt: new Date('2024-03-08T15:45:00Z'),
-    updatedAt: new Date('2024-03-14T10:20:00Z')
-  },
-  {
-    id: 'ord-004',
-    pnr: 'JKL012',
-    transactionId: 'TXN-2024-004',
-    customer: {
-      email: 'sarah.johnson@example.com',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      phone: '+1-555-0321'
-    },
-    products: ['Flight Ticket', 'Lounge Access'],
-    segments: [
-      {
-        segmentId: 'seg-004',
-        flightNumber: 'BA789',
-        departure: 'LHR',
-        arrival: 'CDG',
-        departureTime: new Date('2024-04-01T12:00:00Z'),
-        arrivalTime: new Date('2024-04-01T15:30:00Z'),
-        operatingCarrier: 'British Airways',
-        passengerIds: ['pax-007']
-      }
-    ],
-    status: 'refunded' as const,
-    userId: 'user-004',
-    totalAmount: 750.00,
-    totalCurrency: 'EUR',
-    notes: 'Refund processed due to flight cancellation',
-    createdAt: new Date('2024-03-05T13:20:00Z'),
-    updatedAt: new Date('2024-03-18T16:10:00Z')
-  },
-  {
-    id: 'ord-005',
-    pnr: 'MNO345',
-    transactionId: 'TXN-2024-005',
-    customer: {
-      email: 'david.brown@example.com',
-      firstName: 'David',
-      lastName: 'Brown',
-      phone: '+1-555-0654'
-    },
-    products: ['Flight Ticket', 'Baggage Insurance'],
-    segments: [
-      {
-        segmentId: 'seg-005',
-        flightNumber: 'LH234',
-        departure: 'FRA',
-        arrival: 'JFK',
-        departureTime: new Date('2024-04-05T09:00:00Z'),
-        arrivalTime: new Date('2024-04-05T12:30:00Z'),
-        operatingCarrier: 'Lufthansa',
-        passengerIds: ['pax-008', 'pax-009']
-      }
-    ],
-    status: 'expired' as const,
-    userId: 'user-005',
-    totalAmount: 1650.00,
-    totalCurrency: 'EUR',
-    notes: 'Booking expired - no payment received',
-    createdAt: new Date('2024-03-01T10:15:00Z'),
-    updatedAt: new Date('2024-03-02T10:15:00Z')
-  }
-];
+
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -223,6 +68,7 @@ const getStatusIcon = (status: string) => {
 
 export default function HomePage() {
   const { user, isLoading } = useAuth();
+  const { orders, loading, error, pagination, fetchOrders, refetch } = useOrders();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -240,9 +86,8 @@ export default function HomePage() {
     return null;
   }
 
-
-
-  const filteredOrders = dummyOrders.filter(order => {
+  // Filter orders based on search and status
+  const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.pnr.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -253,6 +98,16 @@ export default function HomePage() {
     
     return matchesSearch && matchesStatus;
   });
+
+  // Handle status filter change
+  const handleStatusFilterChange = (newStatus: string) => {
+    setStatusFilter(newStatus);
+    if (newStatus === 'all') {
+      fetchOrders();
+    } else {
+      fetchOrders({ status: newStatus });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -310,7 +165,7 @@ export default function HomePage() {
               <div className="sm:w-48">
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => handleStatusFilterChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">All Status</option>
@@ -324,174 +179,209 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Orders List */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Order Details
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Flight
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            PNR: {order.pnr}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            ID: {order.id}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {order.products.length} product(s)
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {order.customer.firstName} {order.customer.lastName}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {order.customer.email}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {order.customer.phone}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {order.segments[0]?.flightNumber}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {order.segments[0]?.departure} → {order.segments[0]?.arrival}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {order.segments[0]?.operatingCarrier}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
-                          <span className="text-sm font-medium text-gray-900">
-                            {order.totalAmount?.toFixed(2)} {order.totalCurrency}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                          {getStatusIcon(order.status)}
-                          <span className="ml-1 capitalize">{order.status}</span>
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            
-            {filteredOrders.length === 0 && (
-              <div className="text-center py-12">
-                <Plane className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No orders found</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Try adjusting your search or filter criteria.
-                </p>
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center">
+                <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+                <div>
+                  <h3 className="text-sm font-medium text-red-800">Error loading orders</h3>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="ml-auto"
+                  onClick={refetch}
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Retry
+                </Button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="bg-white rounded-lg shadow p-8 mb-6">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+                <span className="text-gray-600">Loading orders...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Orders List */}
+          {!loading && !error && (
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Order Details
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Flight
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              PNR: {order.pnr}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ID: {order.id}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {order.products.length} product(s)
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {order.customer.firstName} {order.customer.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {order.customer.email}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {order.customer.phone}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {order.segments[0]?.flightNumber}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {order.segments[0]?.departure} → {order.segments[0]?.arrival}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {order.segments[0]?.operatingCarrier}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <span className="text-sm font-medium text-gray-900">
+                              {order.totalAmount?.toFixed(2)} {order.totalCurrency}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                            {getStatusIcon(order.status)}
+                            <span className="ml-1 capitalize">{order.status}</span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {filteredOrders.length === 0 && (
+                <div className="text-center py-12">
+                  <Plane className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No orders found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Try adjusting your search or filter criteria.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Summary Stats */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center">
-                <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Plane className="h-4 w-4 text-blue-600" />
+          {!loading && !error && (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex items-center">
+                  <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Plane className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-500">Total Orders</p>
+                    <p className="text-lg font-semibold text-gray-900">{pagination.total}</p>
+                  </div>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">Total Orders</p>
-                  <p className="text-lg font-semibold text-gray-900">{dummyOrders.length}</p>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex items-center">
+                  <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-500">Confirmed</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {orders.filter(o => o.status === 'confirmed').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex items-center">
+                  <div className="h-8 w-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-yellow-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-500">Pending</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {orders.filter(o => o.status === 'pending').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex items-center">
+                  <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-500">Cancelled</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {orders.filter(o => o.status === 'cancelled').length}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center">
-                <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">Confirmed</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {dummyOrders.filter(o => o.status === 'confirmed').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center">
-                <div className="h-8 w-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <Clock className="h-4 w-4 text-yellow-600" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">Pending</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {dummyOrders.filter(o => o.status === 'pending').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center">
-                <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
-                  <XCircle className="h-4 w-4 text-red-600" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">Cancelled</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {dummyOrders.filter(o => o.status === 'cancelled').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
