@@ -144,7 +144,7 @@ export function EnhancedProductDialog({ orderId, pnr, onProductCancelled, childr
       setCancellingProductId(productId);
       setError(null);
 
-      await ordersApi.cancelOrder(orderWithProducts.order.id, [productId]);
+      await ordersApi.cancelOrder(orderWithProducts.order.id, orderWithProducts.order.pnr, [productId], orderWithProducts.order.customer.email);
       
       // Refresh the order data
       await fetchOrderWithProducts();
@@ -187,7 +187,7 @@ export function EnhancedProductDialog({ orderId, pnr, onProductCancelled, childr
       <SheetTrigger asChild>
         {children}
       </SheetTrigger>
-      <SheetContent side="right" className="w-[1000px] sm:w-[1000px] overflow-y-auto">
+            <SheetContent side="right" className="overflow-y-auto">
         <SheetHeader className="border-b pb-4">
           <SheetTitle className="flex items-center gap-2 text-xl">
             <Plane className="h-6 w-6" />
@@ -195,7 +195,7 @@ export function EnhancedProductDialog({ orderId, pnr, onProductCancelled, childr
           </SheetTitle>
         </SheetHeader>
 
-        <div className="py-6 space-y-6">
+        <div className="py-6 px-6 space-y-6">
           {/* Loading State */}
           {loading && (
             <div className="flex items-center justify-center py-12">

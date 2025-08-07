@@ -146,14 +146,58 @@ class OrdersApi {
     return this.request<OrdersResponse>(endpoint);
   }
 
-  async cancelOrder(orderId: string, productIds: string[]): Promise<any> {
+  async cancelOrder(orderId: string, pnr: string, productIds: string[], customerEmail?: string): Promise<any> {
+    // Get user info from localStorage
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // Determine request source and user role based on actual user role
+    let requestSource: 'customer_app' | 'admin_panel' | 'partner_api' | 'system';
+    let userRole: string;
+    
+    if (userInfo.role === 'admin' || userInfo.role === 'customer_service') {
+      requestSource = 'admin_panel';
+      userRole = userInfo.role;
+    } else if (userInfo.role === 'partner') {
+      requestSource = 'partner_api';
+      userRole = userInfo.role;
+    } else if (userInfo.role === 'system') {
+      requestSource = 'system';
+      userRole = userInfo.role;
+    } else {
+      // Default to customer_app for any other role
+      requestSource = 'customer_app';
+      userRole = 'customer';
+    }
+    
+    const requestBody = {
+      orderIdentifier: {
+        orderId: orderId,
+        pnr: pnr,
+        email: customerEmail || userInfo.email
+      },
+      productId: productIds.length === 1 ? productIds[0] : undefined,
+      requestSource: requestSource,
+      reason: 'Customer request',
+      requestedBy: {
+        userId: userInfo.id || 'unknown',
+
+        userRole: userRole,
+        metadata: {
+          email: userInfo.email,
+          source: requestSource
+        }
+      }
+    };
+    
+    // Debug: Log request details
+    console.log('User info:', userInfo);
+    console.log('User role:', userRole);
+    console.log('Request source:', requestSource);
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+    
     return this.request('/orders/cancel', {
       method: 'POST',
-      body: JSON.stringify({
-        orderId,
-        productIds,
-        reason: 'Customer request'
-      }),
+      body: JSON.stringify(requestBody),
     });
   }
 
